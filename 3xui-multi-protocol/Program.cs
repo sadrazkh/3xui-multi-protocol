@@ -1,6 +1,9 @@
 using Newtonsoft.Json;
 
-
+if (File.Exists("LocalDB.json"))
+{
+    File.Delete("LocalDB.json");
+}
 
 
 while (true)
@@ -12,8 +15,8 @@ while (true)
     if (!File.Exists("LocalDB.json"))
     {
         localDB local = new localDB() { Sec = 10, clients = Clients };
-        var LocalD =File.Create("LocalDB.json");
-        using( var writer = new StreamWriter(LocalD))
+        var LocalD = File.Create("LocalDB.json");
+        using (var writer = new StreamWriter(LocalD))
         {
             writer.Write(JsonConvert.SerializeObject(local));
         }
@@ -21,11 +24,11 @@ while (true)
     }
     localDB localDB = JsonConvert.DeserializeObject<localDB>(File.ReadAllText("LocalDB.json"));
 
-   
+
     List<Client> ALLClients = new List<Client>();
 
     var inbounds = db.Inbounds.ToList();
-foreach (var item in inbounds.Where(c => c.Protocol != "dokodemo-door").ToList())
+    foreach (var item in inbounds.Where(c => c.Protocol != "dokodemo-door").ToList())
     {
         inboundsetting setting = JsonConvert.DeserializeObject<inboundsetting>(item.Settings);
         ALLClients.AddRange(setting.clients);
@@ -36,9 +39,11 @@ foreach (var item in inbounds.Where(c => c.Protocol != "dokodemo-door").ToList()
 
     foreach (var client in ALLClients)
     {
-        if (!FinalClients.Any(x => x.subId == client.subId))
+        if (FinalClients.All(x => x.subId != client.subId))
         {
-            if (ALLClients.Where(x => x.subId == client.subId).Count() > 1)
+            var ko = ALLClients.Where(c => c.subId == client.subId).ToList();
+
+            if (ALLClients.Count(x => x.subId == client.subId) > 1)
             {
 
                 List<Client> Calculate = ALLClients.Where(x => x.subId == client.subId).ToList();
@@ -56,9 +61,9 @@ foreach (var item in inbounds.Where(c => c.Protocol != "dokodemo-door").ToList()
                 Int64? UP = 0;
                 Int64? DOWN = 0;
 
-                Int64? DateMax= Calculate2.Max(x => x.Expiry_Time);
-                Int64? DateMin= Calculate2.Min(x => x.Expiry_Time);
-                Int64? ExpireTime=0;
+                Int64? DateMax = Calculate2.Max(x => x.Expiry_Time);
+                Int64? DateMin = Calculate2.Min(x => x.Expiry_Time);
+                Int64? ExpireTime = 0;
                 if (DateMax > 0)
                 {
                     ExpireTime = DateMax;
@@ -69,16 +74,16 @@ foreach (var item in inbounds.Where(c => c.Protocol != "dokodemo-door").ToList()
                 {
                     foreach (var client2 in Calculate2)
                     {
-                        
+
                         if (client2.Up != maxUP)
                         {
-                            Int64? oldusage = localDB.clients.Where(x => x.Email == client2.Email).First().Up;
+                            Int64? oldusage = localDB.clients.FirstOrDefault(x => x.Email == client2.Email)?.Up;
                             if (client2.Up > oldusage && oldusage != 0 && oldusage != null)
                                 UP += client2.Up - oldusage;
                         }
                         if (client2.Down != maxDOWN)
                         {
-                            Int64? oldusage = localDB.clients.Where(x => x.Email == client2.Email).First().Down;
+                            Int64? oldusage = localDB.clients.FirstOrDefault(x => x.Email == client2.Email)?.Down;
 
                             if (client2.Down > oldusage && oldusage != 0 && oldusage != null)
                                 DOWN += client2.Down - oldusage;
@@ -96,8 +101,8 @@ foreach (var item in inbounds.Where(c => c.Protocol != "dokodemo-door").ToList()
                 foreach (var cal2 in Calculate2)
                 {
                     cal2.Total = maxTotal;
-                    cal2.Up = maxUP+UP;
-                    cal2.Down = maxDOWN+DOWN;
+                    cal2.Up = maxUP + UP;
+                    cal2.Down = maxDOWN + DOWN;
                     cal2.Expiry_Time = ExpireTime;
                     FinalClients_Traffic.Add(cal2);
 
@@ -118,10 +123,11 @@ foreach (var item in inbounds.Where(c => c.Protocol != "dokodemo-door").ToList()
     db.Client_Traffics.UpdateRange(FinalClients_Traffic);
 
     List<Inbound> FinalInbounds = new List<Inbound>();
-    try {
+    try
+    {
         foreach (var inbound in db.Inbounds)
         {
-            if(inbound.Protocol== "vmess" || inbound.Protocol == "vless")
+            if (inbound.Protocol == "vmess" || inbound.Protocol == "vless")
             {
                 inboundsetting setting = JsonConvert.DeserializeObject<inboundsetting>(inbound.Settings);
                 var clis = FinalClients_Traffic.Where(x => x.Inbound_Id == inbound.Id).ToList();
@@ -131,19 +137,19 @@ foreach (var item in inbounds.Where(c => c.Protocol != "dokodemo-door").ToList()
                     addtoInbound.Add(FinalClients.Where(x => x.email == client.Email).FirstOrDefault());
 
                 }
-                if (addtoInbound.Count() > 0)
+                if (addtoInbound.Any())
                 {
 
                     List<Client> pastclients = new List<Client>();
                     foreach (Client client in setting.clients)
-                        if (!addtoInbound.Any(x => x.email == client.email)) { pastclients.Add(client); }
+                        if (addtoInbound.All(x => x.email != client.email)) { pastclients.Add(client); }
                     pastclients.AddRange(addtoInbound);
                     setting.clients = pastclients;
                     inbound.Settings = JsonConvert.SerializeObject(setting);
                     FinalInbounds.Add(inbound);
                 }
             }
-            
+
         }
 
     }
@@ -153,12 +159,12 @@ foreach (var item in inbounds.Where(c => c.Protocol != "dokodemo-door").ToList()
     var client_Traffics = new MultiProtocolContext().Client_Traffics
        .ToList();
 
-     localDB updateLocal = new localDB() { Sec = localDB.Sec, clients = client_Traffics };
+    localDB updateLocal = new localDB() { Sec = localDB.Sec, clients = client_Traffics };
     File.Delete("LocalDB.json");
     var file = File.Create("LocalDB.json");
     StreamWriter streamWriter = new StreamWriter(file);
-        streamWriter.Write(JsonConvert.SerializeObject(updateLocal));
-        streamWriter.Close();
+    streamWriter.Write(JsonConvert.SerializeObject(updateLocal));
+    streamWriter.Close();
     file.Close();
 
     Console.WriteLine("Done");
