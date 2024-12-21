@@ -12,8 +12,8 @@ while (true)
     if (!File.Exists("LocalDB.json"))
     {
         localDB local = new localDB() { Sec = 10, clients = Clients };
-        var LocalD = File.Create("LocalDB.json");
-        using (var writer = new StreamWriter(LocalD))
+        var LocalD =File.Create("LocalDB.json");
+        using( var writer = new StreamWriter(LocalD))
         {
             writer.Write(JsonConvert.SerializeObject(local));
         }
@@ -21,11 +21,11 @@ while (true)
     }
     localDB localDB = JsonConvert.DeserializeObject<localDB>(File.ReadAllText("LocalDB.json"));
 
-
+   
     List<Client> ALLClients = new List<Client>();
 
     var inbounds = db.Inbounds.ToList();
-    foreach (var item in inbounds.Where(c => c.Protocol != "dokodemo-door").ToList())
+foreach (var item in inbounds.Where(c => c.Protocol != "dokodemo-door").ToList())
     {
         inboundsetting setting = JsonConvert.DeserializeObject<inboundsetting>(item.Settings);
         ALLClients.AddRange(setting.clients);
@@ -56,9 +56,9 @@ while (true)
                 Int64? UP = 0;
                 Int64? DOWN = 0;
 
-                Int64? DateMax = Calculate2.Max(x => x.Expiry_Time);
-                Int64? DateMin = Calculate2.Min(x => x.Expiry_Time);
-                Int64? ExpireTime = 0;
+                Int64? DateMax= Calculate2.Max(x => x.Expiry_Time);
+                Int64? DateMin= Calculate2.Min(x => x.Expiry_Time);
+                Int64? ExpireTime=0;
                 if (DateMax > 0)
                 {
                     ExpireTime = DateMax;
@@ -69,7 +69,7 @@ while (true)
                 {
                     foreach (var client2 in Calculate2)
                     {
-
+                        
                         if (client2.Up != maxUP)
                         {
                             Int64? oldusage = localDB.clients.Where(x => x.Email == client2.Email).First().Up;
@@ -96,11 +96,11 @@ while (true)
                 foreach (var cal2 in Calculate2)
                 {
                     cal2.Total = maxTotal;
-                    cal2.Up = maxUP + UP;
-                    cal2.Down = maxDOWN + DOWN;
+                    cal2.Up = maxUP+UP;
+                    cal2.Down = maxDOWN+DOWN;
                     cal2.Expiry_Time = ExpireTime;
 
-                    if (ExpireTime.Value > 1734451066000)
+                    if (ExpireTime.Value > DateTime.Now.AddDays(15).Ticks)
                     {
                         cal2.Reset = 0;
                     }
@@ -113,47 +113,7 @@ while (true)
                     cal.totalGB = maxTotalGB;
                     cal.expiryTime = ExpireTime;
 
-                    if (ExpireTime.Value > 1734451066000)
-                    {
-                        cal.reset = false;
-                    }
-
-                    FinalClients.Add(cal);
-                }
-            }
-            else
-            {
-
-                List<Client> Calculate = ALLClients.Where(x => x.subId == client.subId).ToList();
-                List<Client_Traffics> Calculate2 = new List<Client_Traffics>();
-                foreach (var client2 in Calculate)
-                {
-                    Calculate2.Add(Clients.Where(x => x.Email == client2.email).FirstOrDefault());
-                }
-
-                Int64? DateMax = Calculate2.Max(x => x.Expiry_Time);
-                Int64? DateMin = Calculate2.Min(x => x.Expiry_Time);
-                Int64? ExpireTime = 0;
-                if (DateMax > 0)
-                {
-                    ExpireTime = DateMax;
-                }
-                else if (DateMin < 0)
-                    ExpireTime = DateMin;
-
-                foreach (var cal2 in Calculate2)
-                {
-                    if (ExpireTime.Value > 1734451066000)
-                    {
-                        cal2.Reset = 0;
-                    }
-
-                    FinalClients_Traffic.Add(cal2);
-
-                }
-                foreach (var cal in Calculate)
-                {
-                    if (ExpireTime.Value > 1734451066000)
+                    if (ExpireTime.Value > DateTime.Now.AddDays(15).Ticks)
                     {
                         cal.reset = false;
                     }
@@ -170,11 +130,10 @@ while (true)
     db.Client_Traffics.UpdateRange(FinalClients_Traffic);
 
     List<Inbound> FinalInbounds = new List<Inbound>();
-    try
-    {
+    try {
         foreach (var inbound in db.Inbounds)
         {
-            if (inbound.Protocol == "vmess" || inbound.Protocol == "vless")
+            if(inbound.Protocol== "vmess" || inbound.Protocol == "vless")
             {
                 inboundsetting setting = JsonConvert.DeserializeObject<inboundsetting>(inbound.Settings);
                 var clis = FinalClients_Traffic.Where(x => x.Inbound_Id == inbound.Id).ToList();
@@ -196,7 +155,7 @@ while (true)
                     FinalInbounds.Add(inbound);
                 }
             }
-
+            
         }
 
     }
@@ -206,12 +165,12 @@ while (true)
     var client_Traffics = new MultiProtocolContext().Client_Traffics
        .ToList();
 
-    localDB updateLocal = new localDB() { Sec = localDB.Sec, clients = client_Traffics };
+     localDB updateLocal = new localDB() { Sec = localDB.Sec, clients = client_Traffics };
     File.Delete("LocalDB.json");
     var file = File.Create("LocalDB.json");
     StreamWriter streamWriter = new StreamWriter(file);
-    streamWriter.Write(JsonConvert.SerializeObject(updateLocal));
-    streamWriter.Close();
+        streamWriter.Write(JsonConvert.SerializeObject(updateLocal));
+        streamWriter.Close();
     file.Close();
 
     Console.WriteLine("Done");
