@@ -99,12 +99,6 @@ foreach (var item in inbounds.Where(c => c.Protocol != "dokodemo-door").ToList()
                     cal2.Up = maxUP+UP;
                     cal2.Down = maxDOWN+DOWN;
                     cal2.Expiry_Time = ExpireTime;
-
-                    if (ExpireTime.Value > DateTime.Now.AddDays(15).Ticks)
-                    {
-                        cal2.Reset = 0;
-                    }
-
                     FinalClients_Traffic.Add(cal2);
 
                 }
@@ -112,12 +106,6 @@ foreach (var item in inbounds.Where(c => c.Protocol != "dokodemo-door").ToList()
                 {
                     cal.totalGB = maxTotalGB;
                     cal.expiryTime = ExpireTime;
-
-                    if (ExpireTime.Value > DateTime.Now.AddDays(15).Ticks)
-                    {
-                        cal.reset = false;
-                    }
-
                     FinalClients.Add(cal);
                 }
             }
