@@ -25,7 +25,7 @@ while (true)
     List<Client> ALLClients = new List<Client>();
 
     var inbounds = db.Inbounds.ToList();
-foreach (var item in inbounds.Where(c => c.Protocol != "dokodemo-door").ToList())
+foreach (var item in inbounds.Where(c => c.Protocol != "dokodemo-door").Where(c => c.Protocol != "tunnel").ToList())
     {
         inboundsetting setting = JsonConvert.DeserializeObject<inboundsetting>(item.Settings);
         ALLClients.AddRange(setting.clients);
